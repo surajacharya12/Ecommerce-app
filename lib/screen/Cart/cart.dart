@@ -1,4 +1,5 @@
 import 'package:client/backend_services/cart_services.dart';
+import 'package:client/screen/Checkout/checkout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -295,9 +296,17 @@ class _CartScreenState extends State<CartScreen> {
                         vertical: 12,
                       ),
                     ),
-                    onPressed: () {
-                      // TODO: Add your payment flow here
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => Checkout(userId: widget.userId),
+                        ),
+                      );
+                      // Optionally refresh the cart after returning from Checkout
+                      fetchCart();
                     },
+
                     child: const Text(
                       'Proceed to Payment',
                       style: TextStyle(fontSize: 16),
