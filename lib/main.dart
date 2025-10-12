@@ -1,12 +1,14 @@
 import 'package:client/screen/Home/Home.dart';
+import 'package:client/screen/Notification/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-
-import 'loading.dart';
 import 'notification_controller.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import 'Auth/loading.dart';
+
+final GlobalKey<NavigatorState> navigatorKey =
+    NotificationController.navigatorKey;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +88,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: initialScreen,
+      routes: {'/notification-page': (_) => const NotificationScreen()},
     );
   }
 }

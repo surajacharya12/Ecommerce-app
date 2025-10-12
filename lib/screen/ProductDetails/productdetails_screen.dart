@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:client/backend_services/cart_services.dart';
 import 'package:client/screen/ProductDetails/wigets/bottom_action_buttons.dart';
 import 'package:client/screen/ProductDetails/wigets/customer_reviews_list.dart';
 import 'package:client/screen/ProductDetails/wigets/product_overview_card.dart';
@@ -143,16 +144,50 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     }
   }
 
-  void _addToCart() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Product added to cart!")));
+  Future<void> _addToCart() async {
+    final productId = widget.productId;
+    final userId = widget.customerId;
+    final quantity = 1;
+
+    bool success = await CartService.addToCart(userId, productId, quantity);
+
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Product added to cart!")));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to add product to cart.")),
+        );
+      }
+    }
   }
 
-  void _buyNow() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Proceeding to checkout!")));
+  Future<void> _buyNow() async {
+    final productId = widget.productId;
+    final userId = widget.customerId;
+    final quantity = 1;
+
+    bool success = await CartService.addToCart(userId, productId, quantity);
+
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Product added to cart! Proceeding to checkout..."),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to add product to cart.")),
+        );
+      }
+    }
   }
 
   @override

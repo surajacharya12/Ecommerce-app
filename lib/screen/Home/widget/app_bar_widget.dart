@@ -4,6 +4,8 @@ import 'package:client/screen/Cart/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:client/screen/Notification/notification.dart';
 import 'package:client/screen/wishlist/wishlist.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:client/backend_services/notification_service.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String userId;
@@ -34,8 +36,12 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   Future<void> fetchCartCount() async {
-    final count = await CartService.getCartCount(widget.userId);
-    setState(() => cartCount = count);
+    try {
+      final count = await CartService.getCartCount(widget.userId);
+      setState(() => cartCount = count);
+    } catch (e) {
+      print('Error fetching cart count: $e');
+    }
   }
 
   @override
@@ -45,7 +51,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
       backgroundColor: Colors.white,
       elevation: 0,
       title: const Text(
-        'ShopEase',
+        'ShopSwift',
         style: TextStyle(
           color: Colors.deepOrange,
           fontWeight: FontWeight.bold,
@@ -53,9 +59,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
         ),
       ),
       actions: [
+        // Notifications Icon
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-          onPressed: () {
+          onPressed: () async {
+            // Optionally fetch latest notifications before opening
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -64,46 +72,25 @@ class _CustomAppBarState extends State<CustomAppBar> {
             );
           },
         ),
-        Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.favorite_outline, color: Colors.black87),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FavoritesScreen(
-                      userId: widget.userId,
-                      userName: widget.userName,
-                      userEmail: widget.userEmail,
-                    ),
-                  ),
-                ).then((_) => fetchCartCount());
-              },
-            ),
-            if (cartCount > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '$cartCount',
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                    textAlign: TextAlign.center,
-                  ),
+
+        // Wishlist Icon
+        IconButton(
+          icon: const Icon(Icons.favorite_outline, color: Colors.black87),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FavoritesScreen(
+                  userId: widget.userId,
+                  userName: widget.userName,
+                  userEmail: widget.userEmail,
                 ),
               ),
-          ],
+            ).then((_) => fetchCartCount()); // Refresh cart count if needed
+          },
         ),
+
+        // Cart Icon with count badge
         const SizedBox(width: 8),
       ],
     );

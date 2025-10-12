@@ -54,6 +54,7 @@ class _ProductGridSectionState extends State<ProductGridSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
           const Text(
             'Popular Products',
             style: TextStyle(

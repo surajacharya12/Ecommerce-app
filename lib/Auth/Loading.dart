@@ -61,7 +61,7 @@ class _LoadingState extends State<Loading> {
             const SizedBox(height: 30),
             // App Name
             const Text(
-              'ShopEase',
+              'ShopSwift',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

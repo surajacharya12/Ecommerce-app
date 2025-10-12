@@ -120,7 +120,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
     return Column(
       children: [
         const Text(
-          'Welcome to ShopEase',
+          'Welcome to ShopSwift',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,

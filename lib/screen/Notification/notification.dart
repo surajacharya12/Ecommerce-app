@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:client/backend_services/notification_service.dart';
+import '../../backend_services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -10,12 +10,11 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   late Future<List<NotificationModel>> _notificationsFuture;
-  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
-    _notificationsFuture = _notificationService.fetchAllNotifications();
+    _notificationsFuture = NotificationService().fetchAllNotifications();
   }
 
   @override

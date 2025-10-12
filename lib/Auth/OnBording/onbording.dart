@@ -19,7 +19,7 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
 
   final List<Map<String, dynamic>> _onboardingData = [
     {
-      "title": "Welcome to ShopEase",
+      "title": "Welcome to ShopSwift",
       "description":
           "Discover amazing products and exclusive deals tailored just for you. Start your shopping journey today!",
       "image": "assets/images/onboarding1.png",

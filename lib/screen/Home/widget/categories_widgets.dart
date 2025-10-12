@@ -36,7 +36,7 @@ class _CategoriesSectionState extends State<CategoriesSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(20.0),
               child: Text(
                 'Categories',
                 style: TextStyle(
@@ -50,7 +50,8 @@ class _CategoriesSectionState extends State<CategoriesSection> {
               height: 100,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const BouncingScrollPhysics(), // Smooth user scrolling
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final category = categories[index];
@@ -75,8 +76,8 @@ class _CategoriesSectionState extends State<CategoriesSection> {
                         Text(
                           category.name,
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
                           ),
                           textAlign: TextAlign.center,
                         ),
