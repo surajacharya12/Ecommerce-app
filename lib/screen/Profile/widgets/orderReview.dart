@@ -125,6 +125,7 @@ class _OrderreviewState extends State<Orderreview> {
     );
   }
 
+  // Fetch product details safely
   Future<Map<String, dynamic>> _fetchProductDetail(String? productId) async {
     if (productId == null || productId.isEmpty) return {};
     try {
@@ -148,26 +149,6 @@ class _OrderreviewState extends State<Orderreview> {
       }
     }
     return '';
-  }
-
-  void _cancelOrder(String orderId) async {
-    try {
-      await _orderService.cancelOrder(orderId);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order cancelled successfully')),
-        );
-      }
-      setState(() {
-        _userOrdersFuture = _orderService.getOrdersByUser(widget.userId);
-      });
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to cancel order: $e')));
-      }
-    }
   }
 
   @override
@@ -198,7 +179,6 @@ class _OrderreviewState extends State<Orderreview> {
               final totalItems = (order['items'] as List?)?.length ?? 0;
               final totalPrice = (order['totalPrice'] as num?) ?? 0;
               final orderNumber = (order['orderNumber'] as String?) ?? 'N/A';
-              final orderId = _getId(order['_id']);
               final items = List<Map<String, dynamic>>.from(
                 order['items'] ?? [],
               );
@@ -260,27 +240,6 @@ class _OrderreviewState extends State<Orderreview> {
                         backgroundColor: Colors.grey.shade300,
                       ),
                       const SizedBox(height: 12),
-
-                      // Cancel Order button (only for pending/processing)
-                      if (status.toLowerCase() == 'pending' ||
-                          status.toLowerCase() == 'processing')
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ElevatedButton(
-                            onPressed: () => _cancelOrder(orderId),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel Order',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
 
                       // Order Items
                       FutureBuilder<List<Map<String, dynamic>>>(
