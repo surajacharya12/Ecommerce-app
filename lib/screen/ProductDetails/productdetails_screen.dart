@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:client/backend_services/cart_services.dart';
+import 'package:client/backend_services/productDetails_service.dart';
+import 'package:client/backend_services/chat_service.dart';
 import 'package:client/screen/ProductDetails/wigets/bottom_action_buttons.dart';
 import 'package:client/screen/ProductDetails/wigets/customer_reviews_list.dart';
 import 'package:client/screen/ProductDetails/wigets/product_overview_card.dart';
@@ -7,8 +9,6 @@ import 'package:client/screen/ProductDetails/wigets/review_submission_section.da
 import 'package:client/screen/chat/chatScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:client/backend_services/productDetails_service.dart';
-import 'package:client/backend_services/chat_service.dart';
 
 typedef ProductDetailData = Map<String, dynamic>;
 
@@ -40,55 +40,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   late Future<ProductDetailData> _productDetailsFuture;
   final ProductDetailsService _detailsService = ProductDetailsService();
   final ChatService _chatService = ChatService();
+
   String? _existingChatId;
+  bool _chatLoading = false;
   List<Map<String, dynamic>> _productReviews = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchProductAndChatDetails();
+    _fetchProductAndReviews();
   }
 
-  Future<void> _fetchProductAndChatDetails() async {
+  Future<void> _fetchProductAndReviews() async {
     setState(() {
       _productDetailsFuture = _detailsService.fetchProductDetails(
         widget.productId,
       );
     });
     await _fetchProductReviews();
-    await _checkExistingChat();
-  }
-
-  Future<void> _checkExistingChat() async {
-    try {
-      if (widget.productId.isEmpty ||
-          widget.customerId.isEmpty ||
-          widget.customerName.isEmpty ||
-          widget.customerEmail.isEmpty) {
-        debugPrint("⚠️ Missing chat parameters — skipping chat check");
-        return;
-      }
-
-      debugPrint("🔍 Checking existing chat with:");
-      debugPrint("productId: ${widget.productId}");
-      debugPrint("customerId: ${widget.customerId}");
-      debugPrint("customerName: ${widget.customerName}");
-      debugPrint("customerEmail: ${widget.customerEmail}");
-
-      final chat = await _chatService.startChat(
-        productId: widget.productId,
-        customerId: widget.customerId,
-        customerName: widget.customerName,
-        customerEmail: widget.customerEmail,
-        initialMessage: '',
-      );
-      setState(() {
-        _existingChatId = chat.id;
-      });
-    } catch (e) {
-      debugPrint('❌ No existing chat or failed to start: $e');
-      _existingChatId = null;
-    }
   }
 
   Future<void> _fetchProductReviews() async {
@@ -100,15 +69,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         _productReviews = reviews;
       });
     } catch (e) {
-      debugPrint('❌ Error fetching product reviews: $e');
+      debugPrint('Error fetching product reviews: $e');
+      setState(() => _productReviews = []);
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Failed to load reviews: $e")));
       }
-      setState(() {
-        _productReviews = [];
-      });
     }
   }
 
@@ -134,7 +101,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           const SnackBar(content: Text("Review submitted successfully!")),
         );
       }
-      _fetchProductAndChatDetails();
+      _fetchProductAndReviews();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -145,47 +112,92 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   Future<void> _addToCart() async {
-    final productId = widget.productId;
-    final userId = widget.customerId;
-    final quantity = 1;
-
-    bool success = await CartService.addToCart(userId, productId, quantity);
-
-    if (success) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Product added to cart!")));
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add product to cart.")),
-        );
-      }
+    final success = await CartService.addToCart(
+      widget.customerId,
+      widget.productId,
+      1,
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? "Product added to cart!"
+                : "Failed to add product to cart.",
+          ),
+        ),
+      );
     }
   }
 
   Future<void> _buyNow() async {
-    final productId = widget.productId;
-    final userId = widget.customerId;
-    final quantity = 1;
-
-    bool success = await CartService.addToCart(userId, productId, quantity);
-
-    if (success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Product added to cart! Proceeding to checkout..."),
+    final success = await CartService.addToCart(
+      widget.customerId,
+      widget.productId,
+      1,
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? "Product added to cart! Proceeding to checkout..."
+                : "Failed to add product to cart.",
           ),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add product to cart.")),
-        );
+        ),
+      );
+    }
+  }
+
+  // Open chat with **real user info**
+  Future<void> _openChat() async {
+    setState(() => _chatLoading = true);
+
+    try {
+      final chat = await _chatService.startChat(
+        productId: widget.productId,
+        customerId: widget.customerId,
+        customerName: widget.customerName,
+        customerEmail: widget.customerEmail,
+        initialMessage: '',
+      );
+
+      if (chat.id.isEmpty) throw Exception("Invalid chat returned");
+
+      setState(() {
+        _existingChatId = chat.id;
+        _chatLoading = false;
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MessageScreen(userId: widget.customerId, chat: chat),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Failed to start chat: $e');
+      setState(() => _chatLoading = false);
+
+      if (_existingChatId != null) {
+        try {
+          final existingChat = await _chatService.getChatById(_existingChatId!);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  MessageScreen(userId: widget.customerId, chat: existingChat),
+            ),
+          );
+        } catch (err) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Unable to open chat: $err")));
+        }
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Unable to start chat.")));
       }
     }
   }
@@ -255,29 +267,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 40.0),
         child: FloatingActionButton.extended(
-          onPressed: () {
-            debugPrint("🟠 Navigating to ChatScreen with:");
-            debugPrint("productId: ${widget.productId}");
-            debugPrint("customerId: ${widget.customerId}");
-            debugPrint("customerName: ${widget.customerName}");
-            debugPrint("customerEmail: ${widget.customerEmail}");
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  productId: widget.productId,
-                  customerId: widget.customerId,
-                  customerName: widget.customerName,
-                  customerEmail: widget.customerEmail,
-                  userId: widget.customerId,
-                  existingChatId: _existingChatId,
-                ),
-              ),
-            );
-          },
-          backgroundColor: Colors.deepOrange,
-          label: const Text("Chat with Seller"),
-          icon: const Icon(Icons.chat),
+          onPressed: _chatLoading ? null : _openChat,
+          backgroundColor: _chatLoading ? Colors.grey : Colors.deepOrange,
+          label: _chatLoading
+              ? const Text("Opening Chat...")
+              : const Text("Chat with Seller"),
+          icon: _chatLoading
+              ? const CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                )
+              : const Icon(Icons.chat),
         ),
       ),
     );

@@ -1,16 +1,16 @@
-// client/backend_services/chat_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:client/config/api.dart'; // Make sure this path is correct
+import 'package:client/config/api.dart';
 
+// Message Model
 class Message {
-  final String sender;
+  final String senderId;
   final String message;
   final DateTime timestamp;
-  final String? adminId; // Optional for admin messages
+  final String? adminId;
 
   Message({
-    required this.sender,
+    required this.senderId,
     required this.message,
     required this.timestamp,
     this.adminId,
@@ -18,7 +18,7 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      sender: json['sender'] as String,
+      senderId: json['senderId'] ?? json['sender'] as String,
       message: json['message'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       adminId: json['adminId'] as String?,
@@ -27,14 +27,15 @@ class Message {
 
   Map<String, dynamic> toJson() {
     return {
-      'sender': sender,
+      'senderId': senderId,
       'message': message,
       'timestamp': timestamp.toIso8601String(),
-      'adminId': adminId,
+      if (adminId != null) 'adminId': adminId,
     };
   }
 }
 
+// Chat Model
 class Chat {
   final String id;
   final String productId;
@@ -78,7 +79,7 @@ class Chat {
       productName: json['productName'] as String,
       status: json['status'] as String,
       messages: (json['messages'] as List)
-          .map((msgJson) => Message.fromJson(msgJson as Map<String, dynamic>))
+          .map((msg) => Message.fromJson(msg))
           .toList(),
       unreadCount: Map<String, int>.from(json['unreadCount'] as Map),
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -88,10 +89,11 @@ class Chat {
   }
 }
 
+// Chat Service
 class ChatService {
-  final String _baseUrl =
-      API_URL; // Assuming API_URL is defined in config/api.dart
+  final String _baseUrl = API_URL;
 
+  // Start or fetch a chat
   Future<Chat> startChat({
     required String productId,
     required String customerId,
@@ -99,9 +101,7 @@ class ChatService {
     required String customerEmail,
     String? initialMessage,
   }) async {
-    final url = Uri.parse(
-      '$_baseUrl/chats/start',
-    ); // Corrected endpoint based on backend setup
+    final url = Uri.parse('$_baseUrl/chats/start');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -117,15 +117,15 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);
-      return Chat.fromJson(jsonResponse['data'] as Map<String, dynamic>);
+      return Chat.fromJson(jsonResponse['data']);
     } else {
       final errorBody = json.decode(response.body);
       throw Exception('Failed to start chat: ${errorBody['message']}');
     }
   }
 
+  // Fetch chat messages by chatId
   Future<Chat> fetchChatMessages(String chatId, String customerId) async {
-    // Assuming userId and userType are needed by the backend to mark messages as read
     final url = Uri.parse(
       '$_baseUrl/chats/$chatId?userId=$customerId&userType=customer',
     );
@@ -133,36 +133,61 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);
-      return Chat.fromJson(jsonResponse['data'] as Map<String, dynamic>);
+      return Chat.fromJson(jsonResponse['data']);
     } else {
       final errorBody = json.decode(response.body);
       throw Exception('Failed to fetch chat messages: ${errorBody['message']}');
     }
   }
 
+  // Fetch all chats for a customer
+  Future<List<Chat>> fetchChatsByCustomer(String customerId) async {
+    final url = Uri.parse('$_baseUrl/chats/customer/$customerId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final jsonResponse = json.decode(response.body);
+      return (jsonResponse['data'] as List)
+          .map((chatJson) => Chat.fromJson(chatJson))
+          .toList();
+    } else {
+      final errorBody = json.decode(response.body);
+      throw Exception('Failed to fetch chats: ${errorBody['message']}');
+    }
+  }
+
+  // Send a message
   Future<Chat> sendMessage({
     required String chatId,
-    required String message,
-    required String sender, // 'customer' or 'admin'
-    required String userId, // customerId or adminId
+    required Message message,
   }) async {
     final url = Uri.parse('$_baseUrl/chats/$chatId/message');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "message": message,
-        "sender": sender,
-        "userId": userId,
-      }),
+      body: jsonEncode(message.toJson()),
     );
 
     if (response.statusCode == 200) {
       final jsonResponse = json.decode(response.body);
-      return Chat.fromJson(jsonResponse['data'] as Map<String, dynamic>);
+      return Chat.fromJson(jsonResponse['data']);
     } else {
       final errorBody = json.decode(response.body);
       throw Exception('Failed to send message: ${errorBody['message']}');
+    }
+  }
+
+  // Fetch chat by id (helper)
+  Future<Chat> getChatById(String chatId) async {
+    final url = Uri.parse('$_baseUrl/chats/$chatId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final jsonResponse = json.decode(response.body);
+      return Chat.fromJson(jsonResponse['data']);
+    } else {
+      final errorBody = json.decode(response.body);
+      throw Exception('Failed to fetch chat by id: ${errorBody['message']}');
     }
   }
 }

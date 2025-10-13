@@ -1,138 +1,65 @@
-import 'package:flutter/material.dart';
 import 'package:client/backend_services/chat_service.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
 
-class ChatScreen extends StatefulWidget {
-  final String productId;
-  final String customerId;
-  final String customerName;
-  final String customerEmail;
-  final String? existingChatId;
+class MessageScreen extends StatefulWidget {
+  final Chat chat; // Required chat object
   final String userId;
 
-  const ChatScreen({
-    super.key,
-    required this.productId,
-    required this.customerId,
-    required this.customerName,
-    required this.customerEmail,
-    required this.userId,
-    this.existingChatId,
-  });
+  const MessageScreen({super.key, required this.chat, required this.userId});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<MessageScreen> createState() => _MessageScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _MessageScreenState extends State<MessageScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  Future<Chat>? _chatFuture;
-  Chat? _currentChat;
+  late List<Message> _messages;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _startOrFetchChat();
-  }
-
-  void _startOrFetchChat() {
-    debugPrint("🟢 Opening ChatScreen for:");
-    debugPrint("productId: ${widget.productId}");
-    debugPrint("customerId: ${widget.customerId}");
-    debugPrint("customerName: ${widget.customerName}");
-    debugPrint("customerEmail: ${widget.customerEmail}");
-    debugPrint("existingChatId: ${widget.existingChatId}");
-
-    if (widget.productId.isEmpty ||
-        widget.customerId.isEmpty ||
-        widget.customerName.isEmpty ||
-        widget.customerEmail.isEmpty) {
-      throw Exception(
-        "❌ Failed to start chat: Product ID, customer ID, name, and email are required",
-      );
-    }
-
-    if (widget.existingChatId != null) {
-      _chatFuture = _chatService.fetchChatMessages(
-        widget.existingChatId!,
-        widget.userId,
-      );
-    } else {
-      _chatFuture = _chatService.startChat(
-        productId: widget.productId,
-        customerId: widget.userId,
-        customerName: widget.customerName,
-        customerEmail: widget.customerEmail,
-        initialMessage: '',
-      );
-    }
+    _messages = widget.chat.messages;
+    _loading = false;
   }
 
   Future<void> _sendMessage() async {
-    final messageText = _messageController.text.trim();
-    if (messageText.isEmpty) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
-    final tempMessage = Message(
-      sender: 'customer',
-      message: messageText,
+    final newMessage = Message(
+      senderId: widget.userId,
+      message: text,
       timestamp: DateTime.now(),
     );
 
-    _messageController.clear();
     setState(() {
-      _currentChat?.messages.add(tempMessage);
+      _messages.add(newMessage);
+      _messageController.clear();
     });
+
+    // Scroll to bottom after sending
     _scrollToBottom();
 
     try {
-      if (_currentChat == null || _currentChat!.id.isEmpty) {
-        final newChat = await _chatService.startChat(
-          productId: widget.productId,
-          customerId: widget.userId,
-          customerName: widget.customerName,
-          customerEmail: widget.customerEmail,
-          initialMessage: messageText,
-        );
-
-        setState(() {
-          _currentChat = newChat;
-          _chatFuture = Future.value(newChat);
-        });
-      } else {
-        final updatedChat = await _chatService.sendMessage(
-          chatId: _currentChat!.id,
-          message: messageText,
-          sender: 'customer',
-          userId: widget.userId,
-        );
-
-        setState(() {
-          _currentChat = updatedChat;
-          _chatFuture = Future.value(updatedChat);
-        });
-      }
+      // Corrected: use named parameters
+      await _chatService.sendMessage(
+        chatId: widget.chat.id,
+        message: newMessage,
+      );
     } catch (e) {
-      if (_currentChat != null) {
-        setState(() {
-          _currentChat!.messages.remove(tempMessage);
-        });
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to send message: $e")));
+      debugPrint('Error sending message: $e');
     }
-
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          _scrollController.position.maxScrollExtent + 60,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -140,74 +67,91 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  Widget _buildMessageBubble(Message message) {
+    final isMe = message.senderId == widget.userId;
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.deepOrange.shade100 : Colors.grey.shade300,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 0),
+            bottomRight: Radius.circular(isMe ? 0 : 16),
+          ),
+        ),
+        child: Text(
+          message.message,
+          style: TextStyle(
+            color: isMe ? Colors.deepOrange.shade900 : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.deepOrange),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Chat'),
-        centerTitle: true,
-        backgroundColor: Colors.grey[100],
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.deepOrange,
+        title: Text(widget.chat.productName),
       ),
       body: Column(
         children: [
           Expanded(
-            child: _currentChat != null && _currentChat!.messages.isNotEmpty
-                ? _buildMessageList(_currentChat!.messages)
-                : FutureBuilder<Chat>(
-                    future: _chatFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              'Error loading chat: ${snapshot.error}',
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        );
-                      } else if (snapshot.hasData) {
-                        _currentChat = snapshot.data;
-                        return _buildMessageList(_currentChat!.messages);
-                      }
-                      return const Center(
-                        child: Text('Start a conversation below!'),
-                      );
-                    },
-                  ),
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) =>
+                  _buildMessageBubble(_messages[index]),
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     decoration: InputDecoration(
-                      hintText: 'Type your message...',
+                      hintText: 'Type a message...',
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
+                        borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide.none,
                       ),
-                      filled: true,
-                      fillColor: Colors.grey.shade200,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8.0,
+                        horizontal: 16,
+                        vertical: 0,
                       ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                const SizedBox(width: 8.0),
-                FloatingActionButton(
-                  onPressed: _sendMessage,
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  radius: 24,
                   backgroundColor: Colors.deepOrange,
-                  mini: true,
-                  child: const Icon(Icons.send, color: Colors.white),
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),
@@ -215,72 +159,5 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildMessageList(List<Message> messages) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(8.0),
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        final message = messages[index];
-        final isCustomer = message.sender == 'customer';
-        return Align(
-          alignment: isCustomer ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4.0),
-            padding: const EdgeInsets.all(10.0),
-            decoration: BoxDecoration(
-              color: isCustomer
-                  ? Colors.deepOrange.shade100
-                  : Colors.grey.shade300,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(12),
-                topRight: const Radius.circular(12),
-                bottomLeft: isCustomer
-                    ? const Radius.circular(12)
-                    : Radius.zero,
-                bottomRight: isCustomer
-                    ? Radius.zero
-                    : const Radius.circular(12),
-              ),
-            ),
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            child: Column(
-              crossAxisAlignment: isCustomer
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Text(
-                  message.message,
-                  style: TextStyle(
-                    color: isCustomer ? Colors.black87 : Colors.black,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormat('hh:mm a').format(message.timestamp.toLocal()),
-                  style: TextStyle(
-                    color: isCustomer ? Colors.black54 : Colors.black45,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 }
