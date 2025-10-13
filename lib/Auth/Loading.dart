@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:client/Auth/OnBording/onbording.dart';
-import 'dart:async';
+import 'package:client/Auth/OnBording/onbording.dart'; // Import the Onboarding screen
+import 'dart:async'; // For Timer
 
 class Loading extends StatefulWidget {
   const Loading({super.key});
@@ -45,7 +45,9 @@ class _LoadingState extends State<Loading> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.3),
+                    color: Colors.grey.withOpacity(
+                      0.3,
+                    ), // Corrected withOpacity
                     spreadRadius: 2,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
@@ -102,7 +104,7 @@ class _LoadingState extends State<Loading> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.1),
+            color: Colors.orange.withOpacity(0.1), // Corrected withOpacity
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: Colors.deepOrange, size: 24),

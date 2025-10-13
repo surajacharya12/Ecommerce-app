@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 class ProfileService {
   final String baseUrl = API_URL;
 
+  // Fetch user profile
   Future<Map<String, dynamic>> getUserProfile({required String userId}) async {
     try {
       final response = await http.get(
@@ -33,21 +34,19 @@ class ProfileService {
     }
   }
 
-  /**
-   * UPDATED: Now only handles name and password updates via JSON PUT.
-   * Photo updates are handled by uploadUserPhoto.
-   */
+  // Update user profile (name, phone, password)
   Future<Map<String, dynamic>> updateUserProfile({
     required String userId,
     required String name,
+    String? phone, // Added phone
     String? password,
-    // REMOVED: String? photo,
   }) async {
     try {
       final bodyMap = {
         'name': name,
+        if (phone != null && phone.isNotEmpty)
+          'phone': phone, // Include phone if provided
         if (password != null && password.isNotEmpty) 'password': password,
-        // photo field is no longer included in the JSON body
       };
 
       final response = await http.put(
@@ -76,25 +75,22 @@ class ProfileService {
     }
   }
 
-  /**
-   * Photo upload function remains correct and is used by ProfileSettingsPage now.
-   */
+  // Upload user photo
   Future<Map<String, dynamic>> uploadUserPhoto({
     required String userId,
     required File imageFile,
   }) async {
     try {
-      // Targets the new dedicated photo upload endpoint
       final uri = Uri.parse('$baseUrl/users/photo-upload');
       final request = http.MultipartRequest('POST', uri);
-      request.fields['id'] = userId; // User ID field
+      request.fields['id'] = userId;
 
       final mimeType = lookupMimeType(imageFile.path)?.split('/');
       if (mimeType == null) throw Exception('Cannot determine MIME type');
 
       request.files.add(
         await http.MultipartFile.fromPath(
-          'photo', // Must match the server's expected field name
+          'photo',
           imageFile.path,
           contentType: MediaType(mimeType[0], mimeType[1]),
         ),

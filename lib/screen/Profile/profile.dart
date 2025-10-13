@@ -1,11 +1,16 @@
-import 'package:client/screen/Profile/widgets/HelpCenter.dart';
-import 'package:client/screen/Profile/widgets/PaymentOptions.dart';
-import 'package:client/screen/Profile/widgets/contactUs.dart';
+import 'package:client/screen/Profile/widgets/orderReview.dart';
+import 'package:client/screen/Profile/widgets/shipping.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:client/backend_services/profile_service.dart';
+import 'package:client/Auth/login.dart';
 import 'package:client/screen/Profile/profile_settings.dart';
 import 'package:client/screen/Profile/widgets/profile_avatar.dart';
-import 'package:client/Auth/login.dart';
+import 'package:client/screen/Profile/widgets/contactUs.dart';
+import 'package:client/screen/Profile/widgets/HelpCenter.dart';
+import 'package:client/screen/Profile/widgets/PaymentOptions.dart';
+import 'package:client/screen/Profile/widgets/Myreviews.dart';
+import 'package:client/screen/Profile/widgets/Order.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
@@ -29,7 +34,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> loadProfile() async {
     setState(() => loading = true);
     final result = await profileService.getUserProfile(userId: widget.userId);
-
     if (result['success']) {
       setState(() => userData = result['user']);
     } else {
@@ -48,46 +52,59 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget buildActionButton(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
+  Widget buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
     Color bgColor = Colors.white,
-    Color iconColor = const Color.fromARGB(255, 69, 69, 70),
+    Color iconColor = Colors.black87,
+    double size = 60,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: const Offset(2, 4),
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: const Offset(2, 6),
                 ),
               ],
+              gradient: LinearGradient(
+                colors: [Colors.white, bgColor.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: Icon(icon, color: iconColor, size: 28),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: size,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final userName = userData?['name'] ?? 'N/A';
+    final userEmail = userData?['email'] ?? 'No email';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF2F7FF),
       body: SafeArea(
@@ -101,7 +118,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     vertical: 16,
                   ),
                   children: [
-                    // Settings Button
                     Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
@@ -123,35 +139,33 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Profile Info Card
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black12,
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          ProfileAvatar(photoUrl: userData?['photo'], size: 70),
+                          ProfileAvatar(photoUrl: userData?['photo'], size: 80),
                           const SizedBox(height: 12),
                           Text(
-                            userData?['name'] ?? 'N/A',
+                            userName,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            userData?['email'] ?? 'No email',
+                            userEmail,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[700],
@@ -168,7 +182,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 30),
 
                     // My Orders Section
@@ -187,31 +200,57 @@ class _ProfilePageState extends State<ProfilePage> {
                       alignment: WrapAlignment.spaceAround,
                       children: [
                         buildActionButton(
-                          Icons.local_shipping_rounded,
-                          "Orders",
-                          () {},
-                          bgColor: Colors.white,
+                          icon: FontAwesomeIcons.boxOpen,
+                          label: "Orders",
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    UserOrdersPage(userId: widget.userId),
+                              ),
+                            );
+                            loadProfile();
+                          },
+                          bgColor: Colors.blue.shade50,
                           iconColor: Colors.blueAccent,
                         ),
                         buildActionButton(
-                          Icons.local_shipping_outlined,
-                          "Shipping",
-                          () {},
-                          bgColor: Colors.white,
+                          icon: FontAwesomeIcons.truckFast,
+                          label: "Shipping",
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Shipping(userId: widget.userId),
+                              ),
+                            );
+                            loadProfile();
+                          },
+                          bgColor: Colors.orange.shade50,
                           iconColor: Colors.orangeAccent,
                         ),
                         buildActionButton(
-                          Icons.reviews_outlined,
-                          "Reviews",
-                          () {},
-                          bgColor: Colors.white,
+                          icon: FontAwesomeIcons.starHalfAlt,
+                          label: "Reviews",
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    Orderreview(userId: widget.userId),
+                              ),
+                            );
+                            loadProfile();
+                          },
+                          bgColor: Colors.purple.shade50,
                           iconColor: Colors.purpleAccent,
                         ),
                         buildActionButton(
-                          Icons.repeat_rounded,
-                          "Returns",
-                          () {},
-                          bgColor: Colors.white,
+                          icon: FontAwesomeIcons.undoAlt,
+                          label: "Returns",
+                          onTap: () {},
+                          bgColor: Colors.red.shade50,
                           iconColor: Colors.redAccent,
                         ),
                       ],
@@ -234,9 +273,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       alignment: WrapAlignment.spaceAround,
                       children: [
                         buildActionButton(
-                          Icons.mail_outline_rounded,
-                          "Messages",
-                          () async {
+                          icon: FontAwesomeIcons.envelopeOpenText,
+                          label: "Messages",
+                          onTap: () async {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -245,13 +284,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                             loadProfile();
                           },
-                          bgColor: Colors.white,
+                          bgColor: Colors.teal.shade50,
                           iconColor: Colors.teal,
                         ),
                         buildActionButton(
-                          Icons.help_center_outlined,
-                          "Help Center",
-                          () async {
+                          icon: FontAwesomeIcons.questionCircle,
+                          label: "Help Center",
+                          onTap: () async {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -260,20 +299,32 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                             loadProfile();
                           },
-                          bgColor: Colors.white,
+                          bgColor: Colors.deepPurple.shade50,
                           iconColor: Colors.deepPurple,
                         ),
                         buildActionButton(
-                          Icons.reviews_outlined,
-                          "My Reviews",
-                          () {},
-                          bgColor: Colors.white,
+                          icon: FontAwesomeIcons.solidStar,
+                          label: "My Reviews",
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Myreviews(
+                                  userId: widget.userId,
+                                  userName: userName,
+                                  userEmail: userEmail,
+                                ),
+                              ),
+                            );
+                            loadProfile();
+                          },
+                          bgColor: Colors.indigo.shade50,
                           iconColor: Colors.indigo,
                         ),
                         buildActionButton(
-                          Icons.payment,
-                          "Payments \nOptions",
-                          () async {
+                          icon: FontAwesomeIcons.creditCard,
+                          label: "Payment Options",
+                          onTap: () async {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -282,15 +333,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                             loadProfile();
                           },
-                          bgColor: Colors.white,
+                          bgColor: Colors.green.shade50,
                           iconColor: Colors.green,
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 50),
-
-                    // Logout Button
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: logout,
@@ -298,7 +347,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         label: const Text(
                           "Logout",
                           style: TextStyle(
-                            color: Color.fromARGB(255, 79, 78, 78),
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

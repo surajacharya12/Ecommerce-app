@@ -51,11 +51,9 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
           CurvedAnimation(
@@ -63,7 +61,6 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
             curve: Curves.easeOutCubic,
           ),
         );
-
     _animationController.forward();
   }
 
@@ -81,12 +78,12 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
         curve: Curves.easeInOutCubic,
       );
     } else {
-      _navigateBasedOnLoginStatus();
+      _navigateBasedOnLoginStatus(); // Last page, navigate based on login
     }
   }
 
   void _skip() {
-    _navigateBasedOnLoginStatus();
+    _navigateBasedOnLoginStatus(); // Skip onboarding, navigate based on login
   }
 
   Future<void> _navigateBasedOnLoginStatus() async {
@@ -102,10 +99,12 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
       userName = prefs.getString('userName');
       userEmail = prefs.getString('userEmail');
     } catch (e) {
+      // Handle potential errors reading preferences
       isLoggedIn = false;
       userId = null;
       userName = null;
       userEmail = null;
+      print("Error reading SharedPreferences: $e"); // For debugging
     }
 
     if (mounted) {
@@ -115,12 +114,12 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
           pageBuilder: (context, animation, secondaryAnimation) {
             if (isLoggedIn && userId != null) {
               return HomeScreen(
-                userId: userId,
+                userId: userId!,
                 userName: userName ?? "",
                 userEmail: userEmail ?? "",
               );
             } else {
-              return const LoginSignupScreen();
+              return const LoginSignupScreen(); // If not logged in, go to Login/Signup
             }
           },
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -287,7 +286,7 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${_currentPage + 1}/${_onboardingData.length}',
+            '${_currentPage + 1}/${_onboardingData.length}', // Display current page / total pages
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 14,
