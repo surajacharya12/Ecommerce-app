@@ -1,6 +1,7 @@
 import 'package:client/screen/Profile/widgets/Aboutpage.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OtherSettingsPage extends StatefulWidget {
   const OtherSettingsPage({super.key});
@@ -13,6 +14,37 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
   bool notificationsEnabled = true;
   bool darkMode = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadDarkMode();
+  }
+
+  // ✅ Load saved dark mode preference
+  Future<void> _loadDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  // ✅ Save and apply dark mode setting
+  Future<void> _toggleTheme(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', value);
+
+    setState(() {
+      darkMode = value;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(darkMode ? "Dark Theme Enabled" : "Light Theme Enabled"),
+        backgroundColor: Colors.deepOrange,
+      ),
+    );
+  }
+
   void _toggleNotifications(bool value) {
     setState(() => notificationsEnabled = value);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -22,16 +54,6 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
               ? "Notifications Enabled"
               : "Notifications Disabled",
         ),
-        backgroundColor: Colors.deepOrange,
-      ),
-    );
-  }
-
-  void _toggleTheme(bool value) {
-    setState(() => darkMode = value);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(darkMode ? "Dark Theme Enabled" : "Light Theme Enabled"),
         backgroundColor: Colors.deepOrange,
       ),
     );
@@ -90,55 +112,60 @@ class _OtherSettingsPageState extends State<OtherSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Other Settings"),
-        backgroundColor: Colors.deepOrange,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            // Notifications
-            _buildSettingCard(
-              leading: const Icon(
-                Icons.notifications,
-                color: Colors.deepOrange,
-              ),
-              title: "Notifications",
-              trailing: Switch(
-                value: notificationsEnabled,
-                activeColor: Colors.deepOrange,
-                onChanged: _toggleNotifications,
-              ),
-            ),
+    final theme = darkMode ? ThemeData.dark() : ThemeData.light();
 
-            // Theme
-            _buildSettingCard(
-              leading: const Icon(Icons.color_lens, color: Colors.deepOrange),
-              title: "Dark Mode",
-              trailing: Switch(
-                value: darkMode,
-                activeColor: Colors.deepOrange,
-                onChanged: _toggleTheme,
+    return Theme(
+      data: theme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Other Settings"),
+          backgroundColor: Colors.deepOrange,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            children: [
+              // Notifications
+              _buildSettingCard(
+                leading: const Icon(
+                  Icons.notifications,
+                  color: Colors.deepOrange,
+                ),
+                title: "Notifications",
+                trailing: Switch(
+                  value: notificationsEnabled,
+                  activeColor: Colors.deepOrange,
+                  onChanged: _toggleNotifications,
+                ),
               ),
-            ),
 
-            // About App
-            _buildSettingCard(
-              leading: const Icon(Icons.info, color: Colors.deepOrange),
-              title: "About App",
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AboutAppPage()),
+              // Dark Mode
+              _buildSettingCard(
+                leading: const Icon(Icons.color_lens, color: Colors.deepOrange),
+                title: "Dark Mode",
+                trailing: Switch(
+                  value: darkMode,
+                  activeColor: Colors.deepOrange,
+                  onChanged: _toggleTheme,
+                ),
               ),
-              trailing: const Icon(
-                Icons.arrow_forward_ios,
-                size: 18,
-                color: Colors.grey,
+
+              // About App
+              _buildSettingCard(
+                leading: const Icon(Icons.info, color: Colors.deepOrange),
+                title: "About App",
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutAppPage()),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 18,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

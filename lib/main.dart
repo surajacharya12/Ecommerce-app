@@ -1,18 +1,22 @@
-import 'package:client/screen/Home/Home.dart';
-import 'package:client/screen/Notification/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'notification_controller.dart'; // Ensure this file exists for notification setup
-import 'Auth/loading.dart'; // For the initial loading screen
-import 'Auth/OnBording/onbording.dart'; // Onboarding will be navigated to from Loading
+import 'package:reactive_theme/reactive_theme.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = NotificationController
-    .navigatorKey; // Assuming NotificationController provides this
+import 'package:client/screen/Home/Home.dart';
+import 'package:client/screen/Notification/notification.dart';
+import 'notification_controller.dart';
+import 'Auth/loading.dart';
+import 'Auth/OnBording/onbording.dart';
+
+// Global navigator key for notification controller
+final GlobalKey<NavigatorState> navigatorKey =
+    NotificationController.navigatorKey;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Awesome Notifications
+
+  // Initialize notifications
   await NotificationController.initializeNotifications();
 
   // Load login data
@@ -22,12 +26,16 @@ Future<void> main() async {
   final String? userName = loginData['userName'] as String?;
   final String? userEmail = loginData['userEmail'] as String?;
 
+  // Load saved theme mode (light, dark, or system)
+  final ThemeMode? savedThemeMode = await ReactiveMode.getSavedThemeMode();
+
   runApp(
     MyApp(
       isLoggedIn: isLoggedIn,
       userId: userId,
       userName: userName,
       userEmail: userEmail,
+      savedThemeMode: savedThemeMode,
     ),
   );
 }
@@ -42,7 +50,6 @@ Future<Map<String, dynamic>> getLoginData() async {
       'userEmail': prefs.getString('userEmail'),
     };
   } catch (e) {
-    // In case of any error with SharedPreferences, assume not logged in.
     return {
       'isLoggedIn': false,
       'userId': null,
@@ -57,6 +64,7 @@ class MyApp extends StatelessWidget {
   final String? userId;
   final String? userName;
   final String? userEmail;
+  final ThemeMode? savedThemeMode;
 
   const MyApp({
     super.key,
@@ -64,13 +72,13 @@ class MyApp extends StatelessWidget {
     this.userId,
     this.userName,
     this.userEmail,
+    this.savedThemeMode,
   });
 
   @override
   Widget build(BuildContext context) {
     Widget initialScreen;
 
-    // Use widget.isLoggedIn to decide the initial route
     if (isLoggedIn && userId != null && userName != null && userEmail != null) {
       initialScreen = HomeScreen(
         userId: userId!,
@@ -78,22 +86,34 @@ class MyApp extends StatelessWidget {
         userEmail: userEmail!,
       );
     } else {
-      // If not logged in, show the Loading screen which will then navigate to Onboarding
       initialScreen = const Loading();
     }
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
+    // Wrap MaterialApp with ReactiveThemer for dynamic theme control
+    return ReactiveThemer(
+      savedThemeMode: savedThemeMode,
+      builder: (reactiveMode) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        themeMode: reactiveMode,
+        title: 'My App',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepOrange,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepOrange,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        home: initialScreen,
+        routes: {'/notification-page': (_) => const NotificationScreen()},
       ),
-      home: initialScreen,
-      routes: {
-        '/notification-page': (_) => const NotificationScreen(),
-        // You might want to define other routes here or manage them via Navigator.push
-      },
     );
   }
 }

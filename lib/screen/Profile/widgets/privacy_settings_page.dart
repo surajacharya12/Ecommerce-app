@@ -10,9 +10,9 @@ class PrivacySettingsWithInfoPage extends StatefulWidget {
 
 class _PrivacySettingsWithInfoPageState
     extends State<PrivacySettingsWithInfoPage> {
-  bool showProfile = true;
-  bool allowMessages = true;
-  bool shareUsageData = true;
+  bool showProfile = false;
+  bool allowMessages = false;
+  bool shareUsageData = false;
   bool allowPayments = true;
   bool saveLoading = false;
 

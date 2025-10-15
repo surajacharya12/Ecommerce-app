@@ -78,25 +78,7 @@ class PaymentMethodsPage extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrange,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 40,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              child: const Text('Back'),
-            ),
+
             const SizedBox(height: 16),
           ],
         ),

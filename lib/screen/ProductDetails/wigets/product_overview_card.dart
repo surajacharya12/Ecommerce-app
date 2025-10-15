@@ -1,4 +1,3 @@
-// client/screen/ProductDetails/widgets/product_overview_card.dart
 import 'package:client/backend_services/wishlist_services.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -50,7 +49,6 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
       }
     } catch (e) {
       debugPrint('Error checking favorites: $e');
-      // The error was caught here, but originated in FavoriteService.getFavorites
     }
   }
 
@@ -109,16 +107,34 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
       brandName = brandData['name'];
     }
 
-    String? variantName;
-    final variantData = widget.product['proVariantId'];
-    if (variantData is List && variantData.isNotEmpty) {
-      final firstVariant = variantData[0];
-      if (firstVariant is Map<String, dynamic> &&
-          firstVariant['name'] != null) {
-        variantName = firstVariant['name'];
-      } else if (firstVariant is String) {
-        variantName = firstVariant;
-      }
+    // --- COLORS ---
+    List<String> colorNames = [];
+    final colorData = widget.product['colors'];
+    if (colorData is List && colorData.isNotEmpty) {
+      colorNames = colorData
+          .map((color) {
+            if (color is Map<String, dynamic> && color['name'] != null) {
+              return color['name'].toString();
+            }
+            return '';
+          })
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
+    // --- SIZES ---
+    List<String> sizeNames = [];
+    final sizeData = widget.product['sizes'];
+    if (sizeData is List && sizeData.isNotEmpty) {
+      sizeNames = sizeData
+          .map((size) {
+            if (size is Map<String, dynamic> && size['name'] != null) {
+              return size['name'].toString();
+            }
+            return '';
+          })
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
 
     return Card(
@@ -187,11 +203,7 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
                     }
 
                     final previousState = isWishlisted;
-
-                    // Optimistically toggle UI
-                    setState(() {
-                      isWishlisted = !isWishlisted;
-                    });
+                    setState(() => isWishlisted = !isWishlisted);
                     widget.onWishlistToggle(isWishlisted);
 
                     String message = '';
@@ -216,18 +228,13 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
                       }
 
                       if (!success && mounted) {
-                        // Revert state if network call failed
-                        setState(() {
-                          isWishlisted = previousState;
-                        });
+                        setState(() => isWishlisted = previousState);
                         widget.onWishlistToggle(previousState);
                       }
                     } catch (e) {
                       debugPrint('Wishlist error: $e');
                       if (mounted) {
-                        setState(() {
-                          isWishlisted = previousState;
-                        });
+                        setState(() => isWishlisted = previousState);
                         widget.onWishlistToggle(previousState);
                       }
                       message = 'An error occurred';
@@ -282,7 +289,7 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name
+                // --- NAME ---
                 Text(
                   widget.product['name'] ?? 'Unnamed Product',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -293,7 +300,7 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
 
                 const SizedBox(height: 12),
 
-                // Price & Discount
+                // --- PRICE ---
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -314,12 +321,11 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
                           fontSize: 18,
                           color: Colors.grey[500],
                           decoration: TextDecoration.lineThrough,
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                    const SizedBox(width: 10),
                     if (isDiscounted)
                       Container(
+                        margin: const EdgeInsets.only(left: 10),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
@@ -333,7 +339,6 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
                           style: TextStyle(
                             color: Colors.deepOrange.shade800,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -342,7 +347,7 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
 
                 const SizedBox(height: 10),
 
-                // Rating
+                // --- RATING ---
                 Row(
                   children: [
                     ...List.generate(
@@ -365,15 +370,19 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
 
                 const Divider(height: 30),
 
-                // Info rows
-                _infoRow("Category", categoryName),
-                _infoRow("Subcategory", subCategoryName),
-                _infoRow("Brand", brandName),
-                _infoRow("Variant", variantName),
+                // --- INFO ROWS ---
+                if (categoryName != null) _infoRow("Category", categoryName),
+                if (subCategoryName != null)
+                  _infoRow("Subcategory", subCategoryName),
+                if (brandName != null) _infoRow("Brand", brandName),
+                if (colorNames.isNotEmpty)
+                  _infoRow("Colors", colorNames.join(", ")),
+                if (sizeNames.isNotEmpty)
+                  _infoRow("Sizes", sizeNames.join(", ")),
 
                 const Divider(height: 30),
 
-                // Description
+                // --- DESCRIPTION ---
                 Text(
                   "Description",
                   style: Theme.of(
@@ -399,7 +408,7 @@ class _ProductOverviewCardState extends State<ProductOverviewCard> {
                     child: Text(showFullDescription ? "See Less" : "See More"),
                   ),
 
-                // Highlights
+                // --- HIGHLIGHTS ---
                 if (productPoints.isNotEmpty) ...[
                   const Divider(height: 30),
                   Text(

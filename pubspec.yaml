@@ -21,6 +21,7 @@ dependencies:
   awesome_notifications: ^0.10.1
   emailjs: ^4.0.0
   package_info_plus: ^9.0.0
+  reactive_theme: ^2.1.0
 
 
 dev_dependencies:
