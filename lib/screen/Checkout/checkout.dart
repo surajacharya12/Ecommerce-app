@@ -2,6 +2,8 @@ import 'package:client/screen/Checkout/widget/OrderSummery.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:client/backend_services/cart_services.dart';
+import 'package:client/backend_services/order_service.dart';
+import 'package:client/Components /order_success_animation.dart';
 import 'package:client/screen/Checkout/widget/CashOnDeliveryWidget.dart';
 import 'package:client/screen/Checkout/widget/DeliveryMethodStepWidget.dart';
 import 'package:client/screen/Checkout/widget/OnlinePaymentWidget.dart';
@@ -136,15 +138,122 @@ class _CheckoutState extends State<Checkout> {
     });
   }
 
-  void handleOrderSubmit(Map<String, dynamic> submissionData) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Order Submitted! Total: ${currencyFormatter.format(orderSummary!['total'])}",
+  Future<void> handleOrderSubmit(Map<String, dynamic> submissionData) async {
+    if (orderSummary == null || cartData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Order data not available'),
+          backgroundColor: Colors.red,
         ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+      return;
+    }
+
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Prepare order items
+      final items = (cartData!['items'] as List).map((item) {
+        final product = item['productId'];
+        return {
+          'productID': product['_id'],
+          'productName': product['name'],
+          'quantity': item['quantity'],
+          'price': item['price'],
+          'variant': item['variant'] ?? '',
+        };
+      }).toList();
+
+      // Prepare shipping address
+      Map<String, String> shippingAddress;
+      if (selectedDelivery == DeliveryMethod.storeDelivery &&
+          selectedStore != null) {
+        shippingAddress = {
+          'phone': selectedStore!['storePhoneNumber']?.toString() ?? 'N/A',
+          'street':
+              selectedStore!['storeLocation']?.toString() ?? 'Store Address',
+          'city': selectedStore!['storeLocation']?.toString() ?? 'Store City',
+          'state': 'Nepal',
+          'postalCode': '00000',
+          'country': 'Nepal',
+        };
+      } else {
+        shippingAddress = {
+          'phone': submissionData['phone'] ?? '',
+          'street': submissionData['address'] ?? '',
+          'city': 'City',
+          'state': 'Nepal',
+          'postalCode': '00000',
+          'country': 'Nepal',
+        };
+      }
+
+      // Create order
+      final orderResult = await OrderService.createOrder(
+        userId: widget.userId,
+        items: items,
+        shippingAddress: shippingAddress,
+        paymentMethod: submissionData['paymentMethod'] ?? 'COD',
+        deliveryMethod: selectedDelivery == DeliveryMethod.homeDelivery
+            ? 'homeDelivery'
+            : 'storeDelivery',
+        totalPrice: orderSummary!['total'].toDouble(),
+        deliveryFee: orderSummary!['deliveryFee'].toDouble(),
+        selectedStore: selectedStore,
+        customerName: submissionData['customerName'],
+        customerPhone: submissionData['customerPhone'],
+      );
+
+      // Hide loading
+      if (mounted) Navigator.pop(context);
+
+      if (orderResult != null) {
+        // Clear cart after successful order
+        await CartService.clearCart(widget.userId);
+
+        // Show success animation
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderSuccessAnimation(
+                orderData: orderResult,
+                onComplete: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to place order. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void handleBackToPaymentSelection() {

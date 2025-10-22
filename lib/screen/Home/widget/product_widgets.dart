@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:client/backend_services/product_services.dart';
 import 'package:intl/intl.dart';
 
 // Assuming ProductData is a type alias for a Map or a defined class
@@ -194,7 +193,7 @@ class GridProductCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 6),
                   Text(
                     formattedPrice,
                     style: const TextStyle(

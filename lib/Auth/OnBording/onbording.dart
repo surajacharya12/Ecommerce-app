@@ -78,15 +78,16 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
         curve: Curves.easeInOutCubic,
       );
     } else {
-      _navigateBasedOnLoginStatus(); // Last page, navigate based on login
+      _completeOnboardingAndNavigate(); // Last page, mark complete and route
     }
   }
 
   void _skip() {
-    _navigateBasedOnLoginStatus(); // Skip onboarding, navigate based on login
+    _completeOnboardingAndNavigate(); // Skip onboarding, mark complete and route
   }
 
-  Future<void> _navigateBasedOnLoginStatus() async {
+  // --- MODIFIED CODE: Mark onboarding complete, then navigate based on login ---
+  Future<void> _completeOnboardingAndNavigate() async {
     bool isLoggedIn = false;
     String? userId;
     String? userName;
@@ -94,17 +95,29 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      await prefs.setBool('onboardingCompleted', true);
+      isLoggedIn =
+          prefs.getBool('isLoggedIn') ?? false; // Default to false if not found
       userId = prefs.getString('userId');
       userName = prefs.getString('userName');
       userEmail = prefs.getString('userEmail');
+
+      // Add robust logging to see what SharedPreferences actually contains
+      print(
+        "Onboarding: _completeOnboardingAndNavigate - SharedPreferences check:",
+      );
+      print("  isLoggedIn: $isLoggedIn");
+      print("  userId: $userId");
+      print("  userName: $userName");
+      print("  userEmail: $userEmail");
     } catch (e) {
-      // Handle potential errors reading preferences
-      isLoggedIn = false;
+      print(
+        "Error reading SharedPreferences in _navigateBasedOnLoginStatus: $e",
+      );
+      isLoggedIn = false; // Ensure not logged in if there's an error
       userId = null;
       userName = null;
       userEmail = null;
-      print("Error reading SharedPreferences: $e"); // For debugging
     }
 
     if (mounted) {
@@ -112,14 +125,23 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) {
-            if (isLoggedIn && userId != null) {
+            // Only navigate to HomeScreen if ALL necessary login data is present
+            if (isLoggedIn &&
+                userId != null &&
+                userName != null &&
+                userEmail != null) {
+              print("Onboarding: Navigating to HomeScreen.");
               return HomeScreen(
-                userId: userId!,
-                userName: userName ?? "",
-                userEmail: userEmail ?? "",
+                userId: userId,
+                userName: userName,
+                userEmail: userEmail,
               );
             } else {
-              return const LoginSignupScreen(); // If not logged in, go to Login/Signup
+              print(
+                "Onboarding: Navigating to LoginSignupScreen (isLoggedIn=$isLoggedIn, userId=$userId).",
+              );
+              // If any data is missing or not logged in, go to LoginSignupScreen
+              return const LoginSignupScreen();
             }
           },
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -130,6 +152,7 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
       );
     }
   }
+  // --- END MODIFIED CODE ---
 
   Widget _buildPageContent(
     String title,
@@ -251,7 +274,6 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
       children: List.generate(_onboardingData.length, (index) {
         final isActive = _currentPage == index;
         final color = _onboardingData[index]['color'] as Color;
-
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -279,7 +301,6 @@ class _OnboardingState extends State<Onboarding> with TickerProviderStateMixin {
   Widget _buildModernButton() {
     final isLastPage = _currentPage == _onboardingData.length - 1;
     final color = _onboardingData[_currentPage]['color'] as Color;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Row(

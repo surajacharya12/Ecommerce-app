@@ -30,6 +30,10 @@ class CustomBottomNavBar extends StatelessWidget {
           label: 'Cart',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.local_offer),
+          label: 'Coupons',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           label: 'Profile',
         ),

@@ -40,25 +40,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final userId = response['userId']?.toString();
         final token = response['token']?.toString();
-
-        if (userId != null && userId.isNotEmpty) {
-          await prefs.setString('userId', userId); // store as String
-        }
         final userName = response['userName']?.toString() ?? '';
         final userEmail = response['userEmail']?.toString() ?? '';
+
+        if (userId != null && userId.isNotEmpty) {
+          await prefs.setString('userId', userId);
+        }
+        await prefs.setString('userName', userName);
+        await prefs.setString('userEmail', userEmail);
         if (token != null && token.isNotEmpty) {
           await prefs.setString('token', token);
         }
 
         if (!mounted) return;
 
-        // Safe check for userId existence
         if (userId != null) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              // FIX: Pass userId as a String instead of an int.
-              // We remove int.parse() to match the expected String type of HomeScreen's userId parameter.
               builder: (context) => HomeScreen(
                 userId: userId,
                 userName: userName,

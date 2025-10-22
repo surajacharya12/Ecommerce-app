@@ -32,12 +32,16 @@ class PaymentMethodStepWidget extends StatelessWidget {
                   onPressed: onBack,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  "2. Choose Payment Method",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo,
+                const Expanded(
+                  child: Text(
+                    "2. Choose Payment Method",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],

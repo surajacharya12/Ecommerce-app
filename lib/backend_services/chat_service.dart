@@ -8,27 +8,32 @@ class Message {
   final String message;
   final DateTime timestamp;
   final String? adminId;
+  final String sender; // "customer" or "admin"
 
   Message({
     required this.senderId,
     required this.message,
     required this.timestamp,
     this.adminId,
+    required this.sender,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      senderId: json['senderId'] ?? json['sender'] as String,
+      senderId:
+          json['userId'] ?? json['senderId'] ?? '', // For customer messages
       message: json['message'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       adminId: json['adminId'] as String?,
+      sender: json['sender'] as String, // "customer" or "admin"
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'senderId': senderId,
       'message': message,
+      'sender': sender, // Use the actual sender value
+      'userId': senderId, // Backend expects userId field
       'timestamp': timestamp.toIso8601String(),
       if (adminId != null) 'adminId': adminId,
     };

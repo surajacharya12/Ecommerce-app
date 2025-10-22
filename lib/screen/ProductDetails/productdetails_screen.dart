@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'package:client/backend_services/cart_services.dart';
 import 'package:client/backend_services/productDetails_service.dart';
 import 'package:client/backend_services/chat_service.dart';
+import 'package:client/screen/Checkout/unified_checkout.dart';
 import 'package:client/screen/ProductDetails/wigets/bottom_action_buttons.dart';
 import 'package:client/screen/ProductDetails/wigets/customer_reviews_list.dart';
 import 'package:client/screen/ProductDetails/wigets/product_overview_card.dart';
@@ -131,19 +131,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   Future<void> _buyNow() async {
-    final success = await CartService.addToCart(
-      widget.customerId,
-      widget.productId,
-      1,
-    );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? "Product added to cart! Proceeding to checkout..."
-                : "Failed to add product to cart.",
+    // Get the current product data
+    final productData = await _productDetailsFuture;
+
+    if (productData != null && mounted) {
+      // Navigate to unified checkout for buy now
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnifiedCheckout.buyNow(
+            userId: widget.customerId,
+            productData: productData,
+            quantity: 1, // Default quantity, can be made configurable
+            customerName: widget.customerName,
+            customerEmail: widget.customerEmail,
           ),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Unable to load product details. Please try again."),
         ),
       );
     }

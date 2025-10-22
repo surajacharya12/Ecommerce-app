@@ -1,5 +1,5 @@
 import 'package:client/backend_services/cart_services.dart';
-import 'package:client/screen/Checkout/checkout.dart';
+import 'package:client/screen/Checkout/unified_checkout.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -76,6 +76,7 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false, // <-- removes back arrow
         actions: [
           if (items.isNotEmpty)
             IconButton(
@@ -300,10 +301,13 @@ class _CartScreenState extends State<CartScreen> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => Checkout(userId: widget.userId),
+                          builder: (_) => UnifiedCheckout.cart(
+                            userId: widget.userId,
+                            cartData: cartData,
+                          ),
                         ),
                       );
-                      // Optionally refresh the cart after returning from Checkout
+                      // Refresh the cart after returning from Checkout
                       fetchCart();
                     },
 

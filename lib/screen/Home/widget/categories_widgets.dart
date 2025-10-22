@@ -2,7 +2,9 @@ import 'package:client/backend_services/categories_services.dart';
 import 'package:flutter/material.dart';
 
 class CategoriesSection extends StatefulWidget {
-  const CategoriesSection({super.key});
+  final void Function(String categoryId, String categoryName)? onCategoryTap;
+
+  const CategoriesSection({super.key, this.onCategoryTap});
 
   @override
   State<CategoriesSection> createState() => _CategoriesSectionState();
@@ -55,33 +57,60 @@ class _CategoriesSectionState extends State<CategoriesSection> {
                 itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final category = categories[index];
-                  return Container(
+                  return SizedBox(
                     width: 80,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.deepOrange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(30),
-                            image: DecorationImage(
-                              image: NetworkImage(category.image),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        splashColor: Colors.deepOrange.withValues(alpha: 0.15),
+                        onTap: () => widget.onCategoryTap?.call(
+                          category.id,
                           category.name,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                          ),
-                          textAlign: TextAlign.center,
                         ),
-                      ],
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.deepOrange.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  image: DecorationImage(
+                                    image: NetworkImage(category.image),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                category.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },

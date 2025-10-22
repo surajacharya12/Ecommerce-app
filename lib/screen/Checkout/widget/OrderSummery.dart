@@ -63,24 +63,28 @@ class OrderSummaryCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['name'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF1e293b),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF1e293b),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
-                        ),
-                        Text(
-                          'Qty: ${item['quantity']}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF64748b),
+                          Text(
+                            'Qty: ${item['quantity']}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF64748b),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Text(
                       currencyFormatter.format(price),

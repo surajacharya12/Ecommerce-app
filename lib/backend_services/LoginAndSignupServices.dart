@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:client/config/api.dart';
+import 'package:client/config/api.dart'; // Make sure this path is correct
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 import 'package:flutter/foundation.dart';
 
 class BackendService {
-  final String baseUrl = API_URL;
+  final String baseUrl =
+      API_URL; // Assuming API_URL is defined in client/config/api.dart
 
   Future<Map<String, dynamic>> loginUser({
     required String email,
@@ -20,25 +21,33 @@ class BackendService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      debugPrint('Login response (${response.statusCode}): ${response.body}');
+      debugPrint(
+        'BackendService Login response (${response.statusCode}): ${response.body}',
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final user = data['data']['user'];
-        final rawId = user['id'] ?? user['_id'];
-        final userId = rawId?.toString();
+        final rawId = user['id'] ?? user['_id']; // Handle both 'id' and '_id'
+        final userId = rawId?.toString(); // Ensure userId is a String
+
+        // Extract userName and userEmail from the user object, providing defaults
+        final userName = user['name']?.toString() ?? 'Guest';
+        final userEmail = user['email']?.toString() ?? email;
 
         return {
           'success': true,
           'user': user,
           'userId': userId,
+          'userName': userName, // Added userName
+          'userEmail': userEmail, // Added userEmail
           'token': data['data']['token'],
         };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {
-      debugPrint('Login exception: $e');
+      debugPrint('BackendService Login exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }
@@ -65,17 +74,23 @@ class BackendService {
         body: jsonEncode(bodyMap),
       );
 
-      debugPrint('Register response: ${response.body}');
+      debugPrint('BackendService Register response: ${response.body}');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201 && data['success'] == true) {
         final user = data['data']['user'];
         final userId = (user['id'] ?? user['_id']).toString();
+        // Extract userName and userEmail from the user object, providing defaults
+        final userName = user['name']?.toString() ?? name;
+        final userEmail = user['email']?.toString() ?? email;
+
         return {
           'success': true,
           'message': data['message'],
           'user': user,
           'userId': userId,
+          'userName': userName, // Added userName
+          'userEmail': userEmail, // Added userEmail
           'token': data['data']['token'],
         };
       } else {
@@ -85,7 +100,7 @@ class BackendService {
         };
       }
     } catch (e) {
-      debugPrint('Register exception: $e');
+      debugPrint('BackendService Register exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }
@@ -127,7 +142,7 @@ class BackendService {
         };
       }
     } catch (e) {
-      debugPrint('Upload photo exception: $e');
+      debugPrint('BackendService Upload photo exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }
@@ -139,7 +154,7 @@ class BackendService {
         headers: {'Content-Type': 'application/json'},
       );
 
-      debugPrint('Profile response: ${response.body}');
+      debugPrint('BackendService Profile response: ${response.body}');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -151,7 +166,7 @@ class BackendService {
         };
       }
     } catch (e) {
-      debugPrint('Get profile exception: $e');
+      debugPrint('BackendService Get profile exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }
@@ -190,7 +205,7 @@ class BackendService {
         };
       }
     } catch (e) {
-      debugPrint('Update profile exception: $e');
+      debugPrint('BackendService Update profile exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }
@@ -215,7 +230,7 @@ class BackendService {
         };
       }
     } catch (e) {
-      debugPrint('Delete user exception: $e');
+      debugPrint('BackendService Delete user exception: $e');
       return {'success': false, 'message': 'Error: Network or server issue.'};
     }
   }

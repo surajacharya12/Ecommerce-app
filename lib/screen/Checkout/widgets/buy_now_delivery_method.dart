@@ -1,206 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:client/screen/Checkout/checkout.dart'; // Import enums
 import 'package:client/backend_services/store_service.dart';
 
-class DeliveryMethodStepWidget extends StatefulWidget {
-  final DeliveryMethod? selectedDelivery;
+class BuyNowDeliveryMethod extends StatefulWidget {
+  final String selectedDeliveryMethod;
   final Map<String, dynamic>? selectedStore;
-  final Function(DeliveryMethod) onDeliveryMethodSelect;
-  final Function(Map<String, dynamic>) onStoreSelect;
+  final Function(String) onDeliveryMethodChanged;
+  final Function(Map<String, dynamic>) onStoreSelected;
 
-  const DeliveryMethodStepWidget({
+  const BuyNowDeliveryMethod({
     super.key,
-    required this.selectedDelivery,
+    required this.selectedDeliveryMethod,
     required this.selectedStore,
-    required this.onDeliveryMethodSelect,
-    required this.onStoreSelect,
+    required this.onDeliveryMethodChanged,
+    required this.onStoreSelected,
   });
 
   @override
-  State<DeliveryMethodStepWidget> createState() =>
-      _DeliveryMethodStepWidgetState();
+  State<BuyNowDeliveryMethod> createState() => _BuyNowDeliveryMethodState();
 }
 
-class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
-  List<Map<String, dynamic>> storeLocations = [];
-  List<Map<String, dynamic>> filteredStores = [];
-  bool isLoadingStores = false;
-  final TextEditingController _searchController = TextEditingController();
+class _BuyNowDeliveryMethodState extends State<BuyNowDeliveryMethod> {
+  List<Map<String, dynamic>> _storeLocations = [];
+  List<Map<String, dynamic>> _filteredStores = [];
+  bool _isLoadingStores = false;
+  final TextEditingController _storeSearchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _storeSearchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _fetchStoreLocations() async {
     setState(() {
-      isLoadingStores = true;
+      _isLoadingStores = true;
     });
 
     try {
       final stores = await StoreService.getStoreLocations();
       if (stores != null && stores.isNotEmpty) {
         setState(() {
-          storeLocations = stores;
-          filteredStores = stores;
+          _storeLocations = stores;
+          _filteredStores = stores;
         });
       } else {
         setState(() {
-          storeLocations = [];
-          filteredStores = [];
+          _storeLocations = [];
+          _filteredStores = [];
         });
       }
     } catch (e) {
       print('Error fetching stores: $e');
       setState(() {
-        storeLocations = [];
-        filteredStores = [];
+        _storeLocations = [];
+        _filteredStores = [];
       });
     } finally {
       setState(() {
-        isLoadingStores = false;
+        _isLoadingStores = false;
       });
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "1. Choose Delivery Method",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-            ),
-            const Divider(),
-            RadioListTile<DeliveryMethod>(
-              title: const Text('Home Delivery (₹150)'),
-              subtitle: const Text('Delivered to your doorstep'),
-              value: DeliveryMethod.homeDelivery,
-              groupValue: widget.selectedDelivery,
-              onChanged: (val) => widget.onDeliveryMethodSelect(val!),
-            ),
-            RadioListTile<DeliveryMethod>(
-              title: const Text('Store Pickup (₹100)'),
-              subtitle: widget.selectedStore != null
-                  ? Text(
-                      'Selected: ${widget.selectedStore!['storeName'] ?? widget.selectedStore!['name']}',
-                    )
-                  : const Text('Collect from nearest store'),
-              value: DeliveryMethod.storeDelivery,
-              groupValue: widget.selectedDelivery,
-              onChanged: (val) {
-                widget.onDeliveryMethodSelect(val!);
-                if (val == DeliveryMethod.storeDelivery) {
-                  _showStoreSelectionDialog(context);
-                }
-              },
-            ),
-            if (widget.selectedDelivery == DeliveryMethod.storeDelivery &&
-                widget.selectedStore != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.store, color: Colors.blue, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.selectedStore!['storeName'] ??
-                                widget.selectedStore!['name'] ??
-                                'Selected Store',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          color: Colors.green,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.selectedStore!['storeLocation'] ??
-                                widget.selectedStore!['address'] ??
-                                'Store Address',
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (widget.selectedStore!['storePhoneNumber'] != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.phone,
-                            color: Colors.orange,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.selectedStore!['storePhoneNumber'],
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-            if (widget.selectedDelivery == DeliveryMethod.storeDelivery &&
-                widget.selectedStore == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  'Please select a store location.',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _filterStores(String query) {
     setState(() {
       if (query.isEmpty) {
-        filteredStores = storeLocations;
+        _filteredStores = _storeLocations;
       } else {
-        filteredStores = storeLocations.where((store) {
-          final storeName = (store['storeName'] ?? store['name'] ?? '')
-              .toLowerCase();
-          final storeLocation =
-              (store['storeLocation'] ?? store['address'] ?? '').toLowerCase();
+        _filteredStores = _storeLocations.where((store) {
+          final storeName = (store['storeName'] ?? '').toLowerCase();
+          final storeLocation = (store['storeLocation'] ?? '').toLowerCase();
           final searchQuery = query.toLowerCase();
 
           return storeName.contains(searchQuery) ||
@@ -210,15 +79,15 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
     });
   }
 
-  void _showStoreSelectionDialog(BuildContext context) {
+  void _showStoreSelectionDialog() {
     // Fetch stores if not already loaded
-    if (storeLocations.isEmpty && !isLoadingStores) {
+    if (_storeLocations.isEmpty && !_isLoadingStores) {
       _fetchStoreLocations();
     }
 
     // Reset search
-    _searchController.clear();
-    filteredStores = storeLocations;
+    _storeSearchController.clear();
+    _filteredStores = _storeLocations;
 
     showDialog(
       context: context,
@@ -238,16 +107,16 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
               children: [
                 // Search Bar
                 TextField(
-                  controller: _searchController,
+                  controller: _storeSearchController,
                   decoration: InputDecoration(
                     hintText: 'Search by store name or address...',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
+                    suffixIcon: _storeSearchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               setDialogState(() {
-                                _searchController.clear();
+                                _storeSearchController.clear();
                                 _filterStores('');
                               });
                             },
@@ -271,7 +140,7 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
 
                 // Store List
                 Expanded(
-                  child: isLoadingStores
+                  child: _isLoadingStores
                       ? const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -282,13 +151,13 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                             ],
                           ),
                         )
-                      : filteredStores.isEmpty
+                      : _filteredStores.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                _searchController.text.isNotEmpty
+                                _storeSearchController.text.isNotEmpty
                                     ? Icons.search_off
                                     : Icons.store_mall_directory_outlined,
                                 size: 48,
@@ -296,8 +165,8 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                _searchController.text.isNotEmpty
-                                    ? 'No stores found for "${_searchController.text}"'
+                                _storeSearchController.text.isNotEmpty
+                                    ? 'No stores found for "${_storeSearchController.text}"'
                                     : 'No store locations available',
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -305,7 +174,7 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              if (_searchController.text.isEmpty) ...[
+                              if (_storeSearchController.text.isEmpty) ...[
                                 const SizedBox(height: 8),
                                 const Text(
                                   'Please contact support or try again later',
@@ -320,9 +189,9 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                         )
                       : ListView.builder(
                           shrinkWrap: true,
-                          itemCount: filteredStores.length,
+                          itemCount: _filteredStores.length,
                           itemBuilder: (context, index) {
-                            final store = filteredStores[index];
+                            final store = _filteredStores[index];
                             return Card(
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
@@ -340,9 +209,7 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                                   ),
                                 ),
                                 title: Text(
-                                  store['storeName'] ??
-                                      store['name'] ??
-                                      'Store',
+                                  store['storeName'] ?? 'Store',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -363,7 +230,6 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                                         Expanded(
                                           child: Text(
                                             store['storeLocation'] ??
-                                                store['address'] ??
                                                 'Address not available',
                                             style: const TextStyle(
                                               fontSize: 12,
@@ -394,7 +260,7 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
                                   ],
                                 ),
                                 onTap: () {
-                                  widget.onStoreSelect(store);
+                                  widget.onStoreSelected(store);
                                   Navigator.pop(ctx);
                                 },
                               ),
@@ -410,6 +276,138 @@ class _DeliveryMethodStepWidgetState extends State<DeliveryMethodStepWidget> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancel'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Delivery Method',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            RadioListTile<String>(
+              title: const Text('Home Delivery (₹150)'),
+              subtitle: const Text('Delivered to your address'),
+              value: 'homeDelivery',
+              groupValue: widget.selectedDeliveryMethod,
+              onChanged: (value) {
+                widget.onDeliveryMethodChanged(value!);
+              },
+            ),
+            RadioListTile<String>(
+              title: const Text('Store Pickup (₹100)'),
+              subtitle: widget.selectedStore != null
+                  ? Text(
+                      'Selected: ${widget.selectedStore!['storeName'] ?? 'Store'}',
+                    )
+                  : const Text('Collect from nearest store'),
+              value: 'storeDelivery',
+              groupValue: widget.selectedDeliveryMethod,
+              onChanged: (value) {
+                widget.onDeliveryMethodChanged(value!);
+                if (value == 'storeDelivery') {
+                  _showStoreSelectionDialog();
+                }
+              },
+            ),
+            if (widget.selectedDeliveryMethod == 'storeDelivery' &&
+                widget.selectedStore != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF0F9FF), Color(0xFFE0F2FE)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.store,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.selectedStore!['storeName'] ??
+                                'Selected Store',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.green,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.selectedStore!['storeLocation'] ??
+                                'Store Address',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (widget.selectedStore!['storePhoneNumber'] != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.phone,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.selectedStore!['storePhoneNumber'],
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

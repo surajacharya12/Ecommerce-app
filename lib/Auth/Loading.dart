@@ -16,6 +16,7 @@ class _LoadingState extends State<Loading> {
     // Navigate to onboarding after 3 seconds
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
+        print("Loading: Timer finished, navigating to Onboarding.");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const Onboarding()),

@@ -3,9 +3,54 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:client/backend_services/poster_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:client/screen/Product/product.dart';
+import 'package:client/screen/Search/search_screen.dart';
 
-class SearchBarWidget extends StatelessWidget {
-  const SearchBarWidget({super.key});
+class SearchBarWidget extends StatefulWidget {
+  final String userId;
+  final String userName;
+  final String userEmail;
+
+  const SearchBarWidget({
+    super.key,
+    required this.userId,
+    required this.userName,
+    required this.userEmail,
+  });
+
+  @override
+  State<SearchBarWidget> createState() => _SearchBarWidgetState();
+}
+
+class _SearchBarWidgetState extends State<SearchBarWidget> {
+  void _performSearch(String query) {
+    if (query.trim().isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchScreen(
+            userId: widget.userId,
+            userName: widget.userName,
+            userEmail: widget.userEmail,
+            initialQuery: query.trim(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _openSearchScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchScreen(
+          userId: widget.userId,
+          userName: widget.userName,
+          userEmail: widget.userEmail,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +62,48 @@ class SearchBarWidget extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
-            ),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search products...',
-                hintStyle: TextStyle(color: Colors.black),
-                prefixIcon: const Icon(Icons.search, color: Colors.black),
-                suffixIcon: const Icon(Icons.filter_list, color: Colors.black),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
               ),
-              style: const TextStyle(color: Colors.black),
+            ),
+            child: GestureDetector(
+              onTap: _openSearchScreen,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.black),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Search products...',
+                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductPage(
+                              userId: widget.userId,
+                              userName: widget.userName,
+                              userEmail: widget.userEmail,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.filter_list, color: Colors.black),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
